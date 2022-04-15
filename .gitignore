@@ -1,0 +1,10 @@
+node_modules
+
+/.cache
+/build
+/public/build
+.env
+
+/postgres-data
+
+/app/styles/tailwind.css
