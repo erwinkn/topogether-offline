@@ -1,6 +1,14 @@
 import path from 'path';
 import express from 'express';
 import { createRequestHandler } from '@remix-run/express';
+import { postgraphile } from 'postgraphile';
+
+
+// TODOS:
+// - CSRF protection (see Graphile starter)
+// - Configure dev / prod Graphile options
+// - Strict-Transport-Security header (see Remix stacks)
+// - Everything Fly.io (see Remix stacks)
 
 const app = express();
 
@@ -33,18 +41,32 @@ app.use(express.static("public", { maxAge: "1h" }));
 const MODE = process.env.NODE_ENV;
 const BUILD_DIR = path.join(process.cwd(), "build");
 
+// TODO: configure options between dev / production
+app.use(
+  postgraphile(
+    process.env.DATABASE_URL,
+    "public",
+    {
+      watchPg: true,
+      graphiql: true,
+      enhanceGraphiql: true,
+      appendPlugins: [require("@graphile-contrib/pg-simplify-inflector")],
+    }
+  )
+)
+
 app.all(
   "*",
   MODE === "production"
     ? createRequestHandler({ build: require(BUILD_DIR) })
     : (...args) => {
-        purgeRequireCache();
-        const requestHandler = createRequestHandler({
-          build: require(BUILD_DIR),
-          mode: MODE,
-        });
-        return requestHandler(...args);
-      }
+      purgeRequireCache();
+      const requestHandler = createRequestHandler({
+        build: require(BUILD_DIR),
+        mode: MODE,
+      });
+      return requestHandler(...args);
+    }
 );
 
 const port = process.env.PORT || 3000;
